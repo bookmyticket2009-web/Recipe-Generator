@@ -638,24 +638,37 @@ nav a.active::after {
   box-shadow: none;
 }
 
-/* Chatbox Styles & Wider Layout for Tables */
+/* --- FULL SCREEN CHATBOX WITH MAXIMUM WIDTH (SIDEBARS REMOVED) --- */
+.ai-chef-container, 
+#ai-chef-section {
+  width: 100% !important;
+  max-width: 100% !important;
+  height: 100% !important;
+  display: flex !important;
+  flex-direction: column !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
 .ai-chef-messages {
-  flex: 1;
-  padding: 24px;
-  overflow-y: auto;
+  flex: 1 !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 30px 6% !important;
+  overflow-y: auto !important;
   background: #f8fafc;
   display: flex;
   flex-direction: column;
   gap: 16px;
-  min-height: 550px;
+  box-sizing: border-box !important;
 }
 
 .chat-msg {
   width: 100% !important;
   max-width: 100% !important;
-  padding: 20px;
+  padding: 24px !important;
   border-radius: 12px;
-  font-size: 13.5px;
+  font-size: 14px;
   line-height: 1.6;
   box-sizing: border-box;
   overflow: visible !important;
@@ -682,8 +695,9 @@ nav a.active::after {
 .ai-chef-input-area {
   display: flex;
   gap: 12px;
-  width: 100%;
-  padding: 16px;
+  width: 100% !important;
+  max-width: 100% !important;
+  padding: 20px 6% !important;
   background: var(--surface-card);
   border-top: 1px solid var(--border-light);
   box-sizing: border-box;
@@ -692,7 +706,7 @@ nav a.active::after {
 #chefInput {
   flex: 1;
   width: 100%;
-  padding: 12px 16px;
+  padding: 14px 18px;
   border-radius: var(--radius-md);
   border: 1px solid var(--border-light);
   outline: none;
@@ -701,14 +715,18 @@ nav a.active::after {
   color: var(--slate-900);
 }
 
+/* Hide extra sidebar options or recommended panels in chat section */
+.ai-chef-sidebar, 
+.chef-recommendations, 
+.quick-prompts-sidebar {
+  display: none !important;
+}
+
 .chat-msg p {
-  margin: 0 0 8px 0;
+  margin: 0 0 10px 0;
   padding: 0;
   color: inherit;
-  font-size: 13.5px;
-  overflow: visible !important;
-  height: auto !important;
-  max-height: none !important;
+  font-size: 14px;
 }
 
 .chat-msg p:last-child {
@@ -722,7 +740,7 @@ nav a.active::after {
   color: #0f172a !important;
   font-family: 'Plus Jakarta Sans', sans-serif;
   font-weight: 800;
-  margin-top: 12px;
+  margin-top: 14px;
   margin-bottom: 8px;
   background: transparent !important;
   padding: 0 !important;
@@ -730,14 +748,7 @@ nav a.active::after {
   display: block;
 }
 
-.chat-msg.user h1,
-.chat-msg.user h2,
-.chat-msg.user h3,
-.chat-msg.user h4 {
-  color: #ffffff !important;
-}
-
-/* Wide Responsive Table Layout inside Chat */
+/* Full Width Responsive Table Layout Inside Chat */
 .chat-msg table {
   width: 100% !important;
   max-width: 100% !important;
@@ -1074,62 +1085,6 @@ nav a.active::after {
 
 .form-error { color: #ef4444; font-size: 12px; font-weight: 600; }
 
-/* --- BEAUTIFUL FULL-SCREEN / MAXIMIZED DETAIL DRAWER STYLING --- */
-.detail.maximized {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  max-width: 100% !important;
-  z-index: 2000 !important;
-  background: var(--surface-cream, #f8fafc) !important;
-  padding: 40px 10% !important;
-  overflow-y: auto !important;
-  display: flex !important;
-  flex-direction: column !important;
-  box-sizing: border-box !important;
-}
-
-.detail.maximized .detail-photo {
-  width: 100% !important;
-  height: 380px !important;
-  max-height: 380px !important;
-  border-radius: var(--radius-md) !important;
-  overflow: hidden !important;
-  margin: 0 auto 24px auto !important;
-  max-width: 900px !important;
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.08);
-}
-
-.detail.maximized .detail-photo img {
-  width: 100% !important;
-  height: 100% !important;
-  object-fit: cover !important;
-  display: block !important;
-}
-
-.detail.maximized .detail-card {
-  background: #ffffff !important;
-  border-radius: var(--radius-lg) !important;
-  padding: 36px !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05) !important;
-  border: 1px solid var(--border-light) !important;
-  max-width: 900px;
-  margin: 0 auto;
-  width: 100%;
-}
-
-.detail.maximized .detail-actions {
-  max-width: 900px;
-  margin: 0 auto 20px auto;
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-}
-
 /* Responsive Breakpoints */
 @media (max-width: 992px) {
   .sidebar {
@@ -1145,16 +1100,6 @@ nav a.active::after {
   .main { padding: 24px 20px; }
   .fridge-flex-wrapper { flex-direction: column; }
   .fridge-input-area { flex: 1; }
-  .detail {
-    position: fixed;
-    right: 0;
-    top: 0;
-    height: 100vh;
-    transform: translateX(100%);
-    width: 100%;
-    max-width: 400px;
-  }
-  .detail.show { transform: translateX(0); }
 }
 
 @media (max-width: 600px) {
@@ -1162,9 +1107,5 @@ nav a.active::after {
   .search { order: 3; width: 100%; margin-top: 4px; }
   .user-name-label { display: none; }
   .main { padding: 16px; }
-  .hero h1 { font-size: 22px; }
-  .pick-card { flex-direction: column; text-align: center; padding: 20px; }
-  .popular-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
-  .detail { width: 100vw; }
   .modal-card { width: 90vw; padding: 24px; }
 }
