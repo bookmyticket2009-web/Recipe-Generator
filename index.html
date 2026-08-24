@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>CookEase — Pure Veg Recipe & Culinary Assistant</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+
+<div class="app">
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <!-- Sidebar Nav -->
+  <aside class="sidebar" id="sidebar">
+    <div class="logo">
+      <span>Cook<span>Ease</span></span>
+      <button class="close-sidebar-btn" id="closeSidebarBtn">&times;</button>
+    </div>
+    <nav id="sideNav">
+      <a href="#" class="active" data-nav="home"><span class="ico">🏠</span><span class="label">Recipes</span></a>
+      <a href="#" data-nav="favorites"><span class="ico">🤍</span><span class="label">Saved Dishes</span></a>
+      <a href="#" data-nav="fridge"><span class="ico">🧊</span><span class="label">Pantry Match</span></a>
+      <a href="#" data-nav="submit"><span class="ico">➕</span><span class="label">Submit Recipe</span></a>
+      <a href="#" data-nav="admin"><span class="ico">🛡️</span><span class="label">Admin Dashboard</span></a>
+      <a href="#" data-nav="chef"><span class="ico">👨‍🍳</span><span class="label">CookEase AI Assistant</span></a>
+      <a href="#" data-nav="roulette" id="rouletteNavBtn" style="margin-top: 10px; border: 1px solid var(--border-light);"><span class="ico">🎰</span><span class="label">Meal Roulette</span></a>
+    </nav>
+    <div class="promo">
+      <p><b>CookEase Culinary</b><br>Pure Vegetarian Recipes & Editorial Guides</p>
+    </div>
+  </aside>
+
+  <!-- Main Content View -->
+  <main class="main">
+    <div class="topbar">
+      <button class="menu-toggle" id="menuToggle" aria-label="Toggle Navigation">☰</button>
+      <div class="search">
+        🔍 <input type="text" id="searchInput" placeholder="Search veg recipes, ingredients...">
+      </div>
+      <div class="bell has-alert" id="bellBtn">🔔</div>
+      <div class="user-auth-area">
+        <div class="avatar" id="avatarBtn" title="Account">🌱</div>
+        <span id="userNameDisplay" class="user-name-label"></span>
+        <button id="logoutBtn" class="logout-btn" style="display:none;">Logout</button>
+      </div>
+    </div>
+
+    <!-- HOME VIEW -->
+    <div id="homeView">
+      <div class="hero">
+        <h1>Simple way to find<br><span class="accent">tasty veg recipes</span></h1>
+      </div>
+      <div class="categories" id="categories">
+        <div class="cat active" data-filter="all"><div class="circle">▦</div>All</div>
+        <div class="cat" data-filter="daily"><div class="circle">📅</div>Daily</div>
+      </div>
+      <div class="section-title"><h2>Today's picks</h2></div>
+      <div class="pick-card" id="pickCard">
+        <div class="pick-plate">🥞</div>
+        <div class="pick-info"><h3>Loading...</h3><div class="kcal"><b>0</b> kcal</div></div>  
+      </div>
+      <div class="section-title"><h2>Popular recipes</h2><a href="#" id="viewAll">View all</a></div>
+      <div class="popular-grid" id="popularGrid">
+        <div class="no-results" id="noResults">No recipes match your search.</div>
+      </div>
+    </div>
+
+    <!-- AI FRIDGE MANAGER -->
+    <div id="aiFridgeSection" style="display: none; margin-top: 24px;">
+      <div class="fridge-card">
+        <h2>🧊 AI Fridge Manager</h2>
+        <div class="fridge-flex-wrapper">
+          <div class="fridge-input-area">
+            <div class="fridge-input-group">
+              <input type="text" id="fridgeInput" placeholder="Add veg ingredients..." autocomplete="off" />
+              <button id="addFridgeItemBtn" class="btn-primary">+ Add Item</button>
+            </div>
+
+            <div class="quick-add-wrap" style="margin-top: 15px;">
+              <span class="quick-title">Quick Add:</span>
+              <div class="quick-tags">
+                <button class="chip-btn" onclick="addIngredient('Paneer')">+ Paneer</button>
+                <button class="chip-btn" onclick="addIngredient('Tomato')">+ Tomato</button>
+                <button class="chip-btn" onclick="addIngredient('Garlic')">+ Garlic</button>
+                <button class="chip-btn" onclick="addIngredient('Rice')">+ Rice</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="fridge-tray-area">
+            <div class="tray-header">
+              <h3>Your Fridge Items (<span id="fridgeCount">0</span>)</h3>
+              <button class="btn-text-danger" onclick="clearFridge()">Clear All</button>
+            </div>
+            <div id="fridgeTagsTray" class="tags-container">
+              <div class="empty-fridge-msg" id="emptyFridgeMsg"><span>🧊 Your fridge is empty! Add ingredients to get started.</span></div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; margin-top: 15px;">
+              <button id="matchRecipesBtn" class="btn-match-recipes" style="flex: 1;" disabled>
+                ✨ Match DB Recipes
+              </button>
+              <button id="generateAIRecipeBtn" class="btn-match-recipes" style="flex: 1; background: linear-gradient(135deg, #0284c7 0%, #0d9488 100%);" disabled>
+                🤖 Generate Pure Veg AI Recipe
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBMIT RECIPE VIEW & STATUS TRACKER -->
+    <div id="submitRecipeSection" style="display: none; margin-top: 24px;">
+      <div class="fridge-card" style="max-width: 650px; margin: 0 auto;">
+        <h2>➕ Submit Your Recipe</h2>
+        <p style="color: var(--slate-600); font-size: 13.5px; margin-bottom: 20px;">Share your favorite vegetarian dish with the community. Track your submission statuses below!</p>
+        
+        <form id="submitRecipeForm" style="display: flex; flex-direction: column; gap: 16px;">
+          <div class="form-group"><label>Recipe Title</label><input type="text" id="subTitle" required placeholder="e.g. Creamy Paneer Handi"></div>
+          <div class="form-group">
+            <label>Category</label>
+            <select id="subTag" style="padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); background: var(--surface-cream);">
+              <option value="main course">Main Course</option>
+              <option value="bakery">Bakery</option>
+              <option value="beverages">Beverages</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 12px;">
+            <div class="form-group" style="flex:1;"><label>Prep/Cook Time</label><input type="text" id="subTime" required placeholder="30m"></div>
+            <div class="form-group" style="flex:1;"><label>Calories (kcal)</label><input type="number" id="subKcal" required placeholder="350"></div>
+          </div>
+          <div class="form-group"><label>Short Description</label><textarea id="subDesc" rows="3" required placeholder="Brief description of your dish..." style="padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); background: var(--surface-cream); outline:none;"></textarea></div>
+          <div class="form-group"><label>Cooking Instructions (Step by step)</label><textarea id="subInstructions" rows="4" required placeholder="1. Heat oil... 2. Add spices..." style="padding: 12px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); background: var(--surface-cream); outline:none;"></textarea></div>
+          <div id="subResultMsg" style="font-weight: 600; font-size: 13px;"></div>
+          <button type="submit" class="btn-primary" style="margin-top: 8px;">🚀 Submit for AI Analysis & Approval</button>
+        </form>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-light); margin: 28px 0 20px 0;">
+        
+        <h3>📋 My Submissions Status</h3>
+        <p style="color: var(--slate-600); font-size: 12.5px; margin-bottom: 14px;">Check if your recipes have been published or if any rejection reasons were provided by the admin.</p>
+        <div id="mySubmissionsTracker" style="display: flex; flex-direction: column; gap: 10px;">
+          <p style="color: var(--slate-600); font-size: 13px;">Log in to view your submission history and live status updates.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ADMIN DASHBOARD VIEW -->
+    <div id="adminSection" style="display: none; margin-top: 24px;">
+      <div class="fridge-card">
+        <h2>🛡️ Admin Dashboard — Recipe Approvals</h2>
+        
+        <div id="adminLoginBox" style="max-width: 400px; margin: 20px auto; padding: 24px; background: var(--surface-cream); border-radius: var(--radius-md); border: 1px solid var(--border-light);">
+          <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--slate-900);">Admin Authorization Required</h3>
+          <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 16px;">Enter your Admin ID and Password to access the dashboard.</p>
+          <form id="adminLoginForm" style="display: flex; flex-direction: column; gap: 12px;">
+            <input type="text" id="adminIdInput" required placeholder="Admin ID (e.g. Prasheel)" style="padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); outline: none;">
+            <input type="password" id="adminPasswordInput" required placeholder="Password" style="padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); outline: none;">
+            <div id="adminLoginError" style="color: #dc2626; font-size: 12px; font-weight: 600;"></div>
+            <button type="submit" class="btn-primary">Unlock Admin Panel</button>
+          </form>
+        </div>
+
+        <div id="adminDashboardContent" style="display: none;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <p style="color: var(--slate-600); font-size: 13.5px;">Review user-submitted recipes. Ollama AI evaluates each submission to detect whether it is <b>New</b> or <b>Copied</b>.</p>
+            <button id="adminLogoutBtn" style="background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; padding: 6px 14px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">Admin Logout</button>
+          </div>
+          <div id="adminSubmissionsList" style="display: flex; flex-direction: column; gap: 16px;">
+            <p style="color: var(--slate-600);">Loading submissions...</p>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    <!-- AI BOT SECTION: COOKEASE -->
+    <div id="aiChefSection" style="display: none; margin-top: 24px;">
+      <div class="fridge-card">
+        <h2>CookEase Assistant</h2>
+        <p style="color: var(--slate-600); font-size: 13.5px; margin-bottom: 24px;">Ask food & culinary questions, nutritional specs, or request structured recipe tables.</p>
+        
+        <div class="fridge-flex-wrapper">
+          <div class="fridge-input-area">
+            <div class="quick-add-wrap" style="margin-top: 0;">
+              <span class="quick-title">Suggested Culinary Inquiries:</span>
+              <div class="quick-tags" style="display: flex; flex-direction: column; gap: 10px; margin-top: 12px;">
+                <button class="chip-btn prompt-btn" style="text-align: left; padding: 10px 14px;">High-protein vegetarian ingredients and nutrition specs</button>
+                <button class="chip-btn prompt-btn" style="text-align: left; padding: 10px 14px;">How to balance excess salt in a lentil curry</button>
+                <button class="chip-btn prompt-btn" style="text-align: left; padding: 10px 14px;">Plant-based alternatives for heavy cream in gravies</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="fridge-tray-area" style="display: flex; flex-direction: column; height: 500px; border: 1px solid var(--border-light); border-radius: var(--radius-md); overflow: hidden; background: var(--surface-card);">
+            <div class="ai-chef-messages" id="chefChatBox" style="flex: 1; padding: 20px; overflow-y: auto; background: var(--surface-cream); display: flex; flex-direction: column; gap: 16px;">
+              <div class="chat-msg bot">
+                <p>Welcome! I am <b>CookEase</b>, your dedicated Pure Veg culinary assistant. Ask me anything about food, recipes, or meal preparation!</p>
+              </div>
+            </div>
+            <form class="ai-chef-input-area" id="chefChatForm" style="display: flex; gap: 10px; padding: 14px; background: var(--surface-card); border-top: 1px solid var(--border-light);">
+              <input type="text" id="chefInput" placeholder="Ask CookEase a food or recipe question..." autocomplete="off" style="flex: 1; padding: 10px 14px; border-radius: var(--radius-md); border: 1px solid var(--border-light); outline: none; font-size: 13.5px; background: var(--surface-cream);" />
+              <button type="submit" style="background: var(--slate-900); color: #ffffff; border: none; padding: 10px 20px; border-radius: var(--radius-md); font-weight: 600; cursor: pointer;">Send</button>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Recipe Detail Panel -->
+  <aside class="detail" id="detailDrawer">
+    <div class="detail-actions">
+      <!-- FIXED: Added id="backBtn" explicitly -->
+      <button class="circle-btn" id="backBtn" aria-label="Back">←</button>
+      <div style="display:flex;gap:10px;">
+        <button class="circle-btn" id="shareBtn" aria-label="Share">↗</button>
+        <button class="circle-btn save-btn" id="favBtn" aria-label="Favorite">♡</button>
+      </div>
+    </div>
+    <div class="detail-photo" id="detailPhoto">🥞</div>
+    <div class="detail-card" id="detailCard">
+      <h3>Loading…</h3>
+      <p class="desc" id="detailDesc"></p>
+      <div class="nutrition-label">Nutrition Facts</div>
+      <div class="nutrition-grid" id="nutritionGrid">
+        <div class="nutri-item"><div class="val" data-nutri="calories">–</div><div class="label">Calories<br>kcal</div></div>
+        <div class="nutri-item"><div class="val" data-nutri="carbs">–</div><div class="label">Carbs<br>g</div></div>
+        <div class="nutri-item"><div class="val" data-nutri="protein">–</div><div class="label">Protein<br>g</div></div>
+        <div class="nutri-item"><div class="val" data-nutri="fat">–</div><div class="label">Fat<br>g</div></div>
+      </div>
+      <div id="dynamicRecipeContent"></div>
+    </div>
+  </aside>
+</div>
+
+<!-- RECIPE ROULETTE MODAL -->
+<div class="modal-overlay" id="rouletteModal">
+  <div class="modal-card roulette-card">
+    <button class="modal-close" id="closeRouletteModal">&times;</button>
+    
+    <div class="roulette-header">
+      <h2>🎰 Recipe Roulette</h2>
+      <p>Can't decide? Let the wheel pick your meal!</p>
+    </div>
+
+    <div class="roulette-wheel-container">
+      <div class="roulette-pointer">👇</div>
+      <canvas id="rouletteCanvas" width="240" height="220"></canvas>
+    </div>
+
+    <div class="roulette-result" id="rouletteResult" style="display: none;">
+      <div class="result-icon" id="rouletteResultIcon">🍲</div>
+      <h3 id="rouletteResultTitle">Dal Palak Recipe</h3>
+      <button class="btn-view-recipe" id="viewRouletteRecipeBtn">
+        📖 View Recipe
+      </button>
+    </div>
+
+    <button class="btn-spin-again" id="spinWheelBtn">
+      🎲 Spin Again!
+    </button>
+  </div>
+</div>
+
+<!-- Auth Modal -->
+<div class="modal-overlay" id="authModal">
+  <div class="modal-card">
+    <button class="modal-close" id="closeAuthModal">&times;</button>
+    <div class="modal-tabs">
+      <button class="tab-btn active" id="loginTabBtn">Login</button>
+      <button class="tab-btn" id="signupTabBtn">Sign Up</button>
+    </div>
+    <form id="loginForm" class="auth-form active">
+      <div class="form-group"><label>Email</label><input type="email" id="loginEmail" required placeholder="your@email.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="loginPassword" required placeholder="••••••••"></div>
+      <div class="form-error" id="loginError"></div>
+      <button type="submit" class="auth-submit-btn">Login</button>
+    </form>
+    <form id="signupForm" class="auth-form">
+      <div class="form-group"><label>Username</label><input type="text" id="signupUsername" required placeholder="Chef Cook"></div>
+      <div class="form-group"><label>Email</label><input type="email" id="signupEmail" required placeholder="your@email.com"></div>
+      <div class="form-group"><label>Password</label><input type="password" id="signupPassword" required placeholder="••••••••"></div>
+      <div class="form-error" id="signupError"></div>
+      <button type="submit" class="auth-submit-btn">Create Account</button>
+    </form>
+  </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
