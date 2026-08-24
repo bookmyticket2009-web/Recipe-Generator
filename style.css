@@ -638,7 +638,7 @@ nav a.active::after {
   box-shadow: none;
 }
 
-/* Chatbox Styles & Out-of-Bound / Responsive Table Fixes */
+/* Chatbox Styles */
 .ai-chef-messages {
   flex: 1;
   padding: 20px;
@@ -659,7 +659,6 @@ nav a.active::after {
   box-sizing: border-box;
   overflow: visible !important;
   word-wrap: break-word;
-  overflow-wrap: break-word;
 }
 
 .chat-msg.bot {
@@ -735,19 +734,16 @@ nav a.active::after {
   color: #ffffff !important;
 }
 
-/* Updated Table styles to prevent out of bound layout on mobile/desktop */
 .chat-msg table {
   width: 100% !important;
-  max-width: 100% !important;
-  display: block !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
+  max-width: 100%;
   table-layout: auto;
   border-collapse: collapse;
   margin: 14px 0;
   font-size: 13px;
   background: #ffffff !important;
   border-radius: 8px;
+  overflow: hidden;
   border: 1px solid #cbd5e1 !important;
 }
 
@@ -758,7 +754,6 @@ nav a.active::after {
   font-weight: 700;
   text-align: left;
   border-bottom: 1px solid #0f172a !important;
-  white-space: nowrap;
 }
 
 .chat-msg td {
