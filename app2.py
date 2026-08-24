@@ -1,6 +1,6 @@
 """
 app2.py — CookEase Full Application + Secure Admin Dashboard (ID & Password)
-Runs on port 5001 with direct publishing support for admins.
+Runs on port 5001 with direct publishing support for admins and active Ollama chatbot.
 """
 
 import json
@@ -31,23 +31,27 @@ except ImportError:
 
 load_dotenv()
 
-app2 = Flask(__name__, template_folder=".", static_folder=".", static_url_path="")
-app2.secret_key = os.getenv("SECRET_KEY", "cookease_secure_random_secret_key_2026")
+# Fixed variable name to 'app' so Gunicorn can detect it properly on Render (`gunicorn app2:app`)
+app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="")
+app.secret_key = os.getenv("SECRET_KEY", "cookease_secure_random_secret_key_2026")
 
 DB_FILE = "cookease.db"
 JSON_FILE = "recipes_output.json"
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "")
 CHAT_API_KEY = os.getenv("CHAT_API_KEY", "")
 OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:120b")
 
 chat_client = None
 if ollama:
     try:
-        chat_client = ollama.Client(
-            host=OLLAMA_HOST,
-            headers={"Authorization": f"Bearer {CHAT_API_KEY}"} if CHAT_API_KEY else {}
-        )
+        if CHAT_API_KEY:
+            chat_client = ollama.Client(
+                host=OLLAMA_HOST if OLLAMA_HOST else None,
+                headers={"Authorization": f"Bearer {CHAT_API_KEY}"}
+            )
+        else:
+            chat_client = ollama.Client(host=OLLAMA_HOST if OLLAMA_HOST else None)
     except Exception as exc:
         print(f"[CookEase] Ollama client initialization failed: {exc}")
 
@@ -112,9 +116,9 @@ def normalize_text(value):
     return re.sub(r"\s+", " ", str(value or "").strip().lower())
 
 
-@app2.route("/")
+@app.route("/")
 def index():
-    response = make_response(render_template("index.html"))
+    response = make_response(render_template("index2.html"))
     if not request.cookies.get("user_session"):
         response.set_cookie(
             "user_session",
@@ -126,12 +130,12 @@ def index():
     return response
 
 
-@app2.route("/images/<path:filename>")
+@app.route("/images/<path:filename>")
 def serve_images(filename):
     return send_from_directory("images", filename)
 
 
-@app2.route("/<path:filename>")
+@app.route("/<path:filename>")
 def serve_static(filename):
     return send_from_directory(".", filename)
 
@@ -145,7 +149,7 @@ ADMIN_CREDENTIALS = {
 }
 
 
-@app2.route("/api/auth/signup", methods=["POST"])
+@app.route("/api/auth/signup", methods=["POST"])
 def signup():
     data = request.get_json(silent=True) or {}
     username = str(data.get("username", "")).strip()
@@ -170,7 +174,7 @@ def signup():
         conn.close()
 
 
-@app2.route("/api/auth/login", methods=["POST"])
+@app.route("/api/auth/login", methods=["POST"])
 def login():
     data = request.get_json(silent=True) or {}
     email = str(data.get("email", "")).strip().lower()
@@ -188,13 +192,13 @@ def login():
     return response_with_session({"message": "Logged in", "user": {"id": user["id"], "username": user["username"]}})
 
 
-@app2.route("/api/auth/logout", methods=["POST"])
+@app.route("/api/auth/logout", methods=["POST"])
 def logout():
     session.clear()
     return jsonify({"message": "Logged out"})
 
 
-@app2.route("/api/auth/me")
+@app.route("/api/auth/me")
 def get_current_user():
     user_id = session.get("user_id")
     if not user_id:
@@ -202,7 +206,7 @@ def get_current_user():
     return jsonify({"logged_in": True, "user": {"id": user_id, "username": session.get("username")}})
 
 
-@app2.route("/api/admin/login", methods=["POST"])
+@app.route("/api/admin/login", methods=["POST"])
 def admin_login():
     data = request.get_json(silent=True) or {}
     admin_id = str(data.get("id", "")).strip().capitalize()
@@ -216,19 +220,19 @@ def admin_login():
     return jsonify({"error": "Invalid Admin ID or Password. Access denied."}), 403
 
 
-@app2.route("/api/admin/check")
+@app.route("/api/admin/check")
 def check_admin():
     return jsonify({"is_admin": bool(session.get("is_admin")), "admin_name": session.get("admin_name")})
 
 
-@app2.route("/api/admin/logout", methods=["POST"])
+@app.route("/api/admin/logout", methods=["POST"])
 def admin_logout():
     session.pop("is_admin", None)
     session.pop("admin_name", None)
     return jsonify({"message": "Logged out of admin panel"})
 
 
-@app2.route("/api/recipes/submit", methods=["POST"])
+@app.route("/api/recipes/submit", methods=["POST"])
 def submit_recipe():
     user_id = session.get("user_id")
     username = session.get("username")
@@ -318,7 +322,7 @@ def submit_recipe():
     return jsonify({"message": "Recipe submitted successfully for admin approval!", "ai_analysis": {"status": ai_status, "reason": ai_reason}})
 
 
-@app2.route("/api/recipes/my-submissions")
+@app.route("/api/recipes/my-submissions")
 def get_my_submissions():
     user_id = session.get("user_id")
     username = session.get("username")
@@ -337,7 +341,7 @@ def get_my_submissions():
         conn.close()
 
 
-@app2.route("/api/admin/submissions")
+@app.route("/api/admin/submissions")
 def get_admin_submissions():
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 403
@@ -347,7 +351,7 @@ def get_admin_submissions():
     return jsonify([dict(row) for row in rows])
 
 
-@app2.route("/api/admin/submissions/<int:sub_id>/approve", methods=["POST"])
+@app.route("/api/admin/submissions/<int:sub_id>/approve", methods=["POST"])
 def approve_submission(sub_id):
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 403
@@ -399,7 +403,7 @@ def approve_submission(sub_id):
     return jsonify({"message": "Approved and published successfully!"})
 
 
-@app2.route("/api/admin/submissions/<int:sub_id>/reject", methods=["POST"])
+@app.route("/api/admin/submissions/<int:sub_id>/reject", methods=["POST"])
 def reject_submission(sub_id):
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 403
@@ -413,7 +417,7 @@ def reject_submission(sub_id):
     return jsonify({"message": "Rejected with reason."})
 
 
-@app2.route("/api/fridge/match", methods=["POST"])
+@app.route("/api/fridge/match", methods=["POST"])
 def match_fridge_recipes():
     data = request.get_json(silent=True) or {}
     raw_items = data.get("ingredients", [])
@@ -436,7 +440,7 @@ def match_fridge_recipes():
         conn.close()
 
 
-@app2.route("/api/recipes/search")
+@app.route("/api/recipes/search")
 def search_recipes():
     q = normalize_text(request.args.get("q", ""))
     tag = normalize_text(request.args.get("tag", "all"))
@@ -462,7 +466,7 @@ def search_recipes():
     } for r in rows])
 
 
-@app2.route("/api/recipes/<key>")
+@app.route("/api/recipes/<key>")
 def get_recipe_detail(key):
     conn = get_db_connection()
     try:
@@ -483,7 +487,7 @@ def get_recipe_detail(key):
     })
 
 
-@app2.route("/api/recipes/todays-pick")
+@app.route("/api/recipes/todays-pick")
 def todays_pick():
     conn = get_db_connection()
     recipe = conn.execute("SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1").fetchone()
@@ -492,7 +496,7 @@ def todays_pick():
     return jsonify({"key": recipe["key"], "title": recipe["title"], "kcal": recipe["kcal"], "image": recipe["image"] or recipe["image_url"], "icon": recipe["icon"] or "🌱"})
 
 
-@app2.route("/api/recipes/roulette")
+@app.route("/api/recipes/roulette")
 def roulette_pick():
     conn = get_db_connection()
     recipe = conn.execute("SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1").fetchone()
@@ -501,7 +505,7 @@ def roulette_pick():
     return jsonify({"key": recipe["key"], "title": recipe["title"], "kcal": recipe["kcal"], "image": recipe["image"] or recipe["image_url"], "icon": recipe["icon"] or "🌱", "desc": recipe["desc"], "favorited": recipe["key"] in get_favorites()})
 
 
-@app2.route("/api/favorites/<key>", methods=["POST"])
+@app.route("/api/favorites/<key>", methods=["POST"])
 def toggle_favorite(key):
     user_id = session.get("user_id")
     session_id = get_session_id()
@@ -529,14 +533,58 @@ def toggle_favorite(key):
         conn.close()
 
 
-@app2.route("/api/ai-chef/chat", methods=["POST"])
+# --- FIXED ACTIVE OLLAMA CHATBOT ROUTES ---
+
+@app.route("/api/ai-chef/chat", methods=["POST"])
 def ai_chef_chat():
-    return jsonify({"reply": "I am CookEase AI. Ask me about vegetarian recipes!"})
+    data = request.get_json(silent=True) or {}
+    user_message = str(data.get("message", "")).strip()
+    if not user_message:
+        return jsonify({"error": "Prompt message is required"}), 400
+
+    if not chat_client:
+        return jsonify({"error": "Ollama is not available."}), 503
+
+    conn = get_db_connection()
+    try:
+        search_term = f"%{normalize_text(user_message)}%"
+        rows = conn.execute("""
+            SELECT DISTINCT r.title, r.desc, r.kcal, r.time FROM recipes r
+            LEFT JOIN recipe_ingredients ri ON r.id = ri.recipe_id
+            LEFT JOIN ingredients i ON ri.ingredient_id = i.id
+            WHERE LOWER(r.title) LIKE ? OR LOWER(i.name) LIKE ? LIMIT 5
+        """, (search_term, search_term)).fetchall()
+    finally:
+        conn.close()
+
+    recipe_context = "Database Matched Recipes:\n" if rows else ""
+    for row in rows:
+        recipe_context += f"- {row['title']} | {row['time']} | {row['kcal']} kcal | {row['desc']}\n"
+
+    system_prompt = f"You are CookEase, a 100% PURE VEGETARIAN culinary assistant. Only answer food/cooking questions.\n{recipe_context}"
+
+    try:
+        response = chat_client.chat(model=OLLAMA_CHAT_MODEL, messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}])
+        return jsonify({"reply": response["message"]["content"]})
+    except Exception as exc:
+        print(f"AI CHAT ERROR: {exc}")
+        return jsonify({"error": f"Could not connect to AI model: {exc}"}), 500
 
 
-@app2.route("/api/ai-chef/generate-recipe", methods=["POST"])
+@app.route("/api/ai-chef/generate-recipe", methods=["POST"])
 def generate_ai_recipe():
-    return jsonify({"recipe_markdown": "# Generated Veg Recipe\n- **Ingredients:** Paneer, Spices\n- **Steps:** Mix and cook!"})
+    data = request.get_json(silent=True) or {}
+    ingredients = data.get("ingredients", [])
+    if not ingredients or not chat_client:
+        return jsonify({"error": "Invalid request or Ollama unavailable."}), 400
+
+    prompt = f"Create a delicious PURE VEGETARIAN recipe using: {', '.join(map(str, ingredients))}."
+    try:
+        response = chat_client.chat(model=OLLAMA_CHAT_MODEL, messages=[{"role": "user", "content": prompt}])
+        return jsonify({"recipe_markdown": response["message"]["content"]})
+    except Exception as exc:
+        print(f"GENERATE RECIPE ERROR: {exc}")
+        return jsonify({"error": f"Failed to generate recipe: {exc}"}), 500
 
 
 if __name__ == "__main__":
@@ -544,4 +592,4 @@ if __name__ == "__main__":
     print(" CookEase Full App + Direct Admin Publish (app2.py - Port 5001)")
     print(" http://127.0.0.1:5001")
     print("==================================================")
-    app2.run(debug=True, port=5001)
+    app.run(debug=True, port=5001)
