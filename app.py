@@ -40,19 +40,20 @@ app.secret_key = os.getenv(
 
 DB_FILE = "cookease.db"
 
-OLLAMA_HOST = os.getenv("OLLAMA_HOST", "http://localhost:11434")
+OLLAMA_HOST = os.getenv("OLLAMA_HOST", "")
 CHAT_API_KEY = os.getenv("CHAT_API_KEY", "")
 OLLAMA_CHAT_MODEL = os.getenv("OLLAMA_MODEL", "gpt-oss:120b")
 
 chat_client = None
 if ollama:
     try:
-        chat_client = ollama.Client(
-            host=OLLAMA_HOST,
-            headers={
-                "Authorization": f"Bearer {CHAT_API_KEY}"
-            } if CHAT_API_KEY else {}
-        )
+        if CHAT_API_KEY:
+            chat_client = ollama.Client(
+                host=OLLAMA_HOST if OLLAMA_HOST else None,
+                headers={"Authorization": f"Bearer {CHAT_API_KEY}"}
+            )
+        else:
+            chat_client = ollama.Client(host=OLLAMA_HOST if OLLAMA_HOST else None)
     except Exception as exc:
         print(f"[CookEase] Ollama client initialization failed: {exc}")
 
@@ -404,7 +405,8 @@ def ai_chef_chat():
         response = chat_client.chat(model=OLLAMA_CHAT_MODEL, messages=[{"role": "system", "content": system_prompt}, {"role": "user", "content": user_message}])
         return jsonify({"reply": response["message"]["content"]})
     except Exception as exc:
-        return jsonify({"error": "Could not connect to AI model."}), 500
+        print(f"AI CHAT ERROR: {exc}")
+        return jsonify({"error": f"Could not connect to AI model: {exc}"}), 500
 
 
 @app.route("/api/ai-chef/generate-recipe", methods=["POST"])
@@ -419,7 +421,8 @@ def generate_ai_recipe():
         response = chat_client.chat(model=OLLAMA_CHAT_MODEL, messages=[{"role": "user", "content": prompt}])
         return jsonify({"recipe_markdown": response["message"]["content"]})
     except Exception as exc:
-        return jsonify({"error": "Failed to generate recipe."}), 500
+        print(f"GENERATE RECIPE ERROR: {exc}")
+        return jsonify({"error": f"Failed to generate recipe: {exc}"}), 500
 
 
 def recipe_summary(row, favorites):
