@@ -1,7 +1,6 @@
 """
 CookEase — Flask Backend (User App)
-Pure-veg recipe application with SQLite, authentication, favorites,
-AI Chef, AI Fridge matching, recipe submissions, and status tracking.
+Cleaned version without Admin Dashboard endpoints.
 """
 
 import json
@@ -299,76 +298,6 @@ def match_fridge_recipes():
 
         result.sort(key=lambda item: (-item["match_percentage"], -item["matched_count"], item["title"].lower()))
         return jsonify(result[:30])
-    finally:
-        conn.close()
-
-
-@app.route("/api/recipes/submit", methods=["POST"])
-def submit_recipe():
-    user_id = session.get("user_id")
-    username = session.get("username")
-    if not user_id or not username:
-        return jsonify({"error": "You must be logged in to submit new recipes."}), 401
-
-    data = request.get_json(silent=True) or {}
-    title = str(data.get("title", "")).strip()
-    tag = str(data.get("tag", "main course")).strip().lower()
-    time = str(data.get("time", "30m")).strip()
-    desc = str(data.get("desc", "")).strip()
-    instructions = data.get("instructions", "")
-    kcal = data.get("kcal", 350)
-
-    if not title or not desc:
-        return jsonify({"error": "Title and description are required"}), 400
-
-    conn = get_db_connection()
-    try:
-        existing = conn.execute("SELECT title FROM recipes").fetchall()
-        existing_titles = [row["title"] for row in existing]
-        ai_status, ai_reason = "New", "Unique recipe structure."
-
-        if chat_client:
-            try:
-                prompt = f"Analyze Title: {title}. Existing: {', '.join(existing_titles)}. Return JSON with keys 'status' ('New' or 'Copied') and 'reason'."
-                response = chat_client.chat(model=OLLAMA_CHAT_MODEL, messages=[{"role": "user", "content": prompt}])
-                reply = response["message"]["content"].strip()
-                start, end = reply.find("{"), reply.rfind("}")
-                if start >= 0 and end > start:
-                    ai_data = json.loads(reply[start:end + 1])
-                    if ai_data.get("status") in {"New", "Copied"}:
-                        ai_status = ai_data["status"]
-                    ai_reason = str(ai_data.get("reason", "Analyzed by AI."))
-            except Exception as exc:
-                print(f"Ollama error: {exc}")
-
-        instructions_json = json.dumps(instructions) if isinstance(instructions, list) else json.dumps([str(instructions)])
-
-        conn.execute("""
-            INSERT INTO recipe_submissions (title, tag, time, kcal, desc, instructions, submitted_by, ai_status, ai_reason, approval_status, rejection_reason)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', '')
-        """, (title, tag, time, kcal, desc, instructions_json, username, ai_status, ai_reason))
-        conn.commit()
-
-        return jsonify({"message": "Recipe submitted successfully for admin approval!", "ai_analysis": {"status": ai_status, "reason": ai_reason}})
-    finally:
-        conn.close()
-
-
-@app.route("/api/recipes/my-submissions")
-def get_my_submissions():
-    user_id = session.get("user_id")
-    username = session.get("username")
-    
-    if not user_id or not username:
-        return jsonify({"error": "Unauthorized"}), 401
-        
-    conn = get_db_connection()
-    try:
-        rows = conn.execute(
-            "SELECT title, tag, time, kcal, approval_status, rejection_reason FROM recipe_submissions WHERE submitted_by = ? ORDER BY id DESC",
-            (username,)
-        ).fetchall()
-        return jsonify([dict(row) for row in rows])
     finally:
         conn.close()
 
