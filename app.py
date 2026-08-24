@@ -458,7 +458,7 @@ def toggle_favorite(key):
                 conn.execute("DELETE FROM user_favorites WHERE session_id = ? AND recipe_key = ? AND user_id IS NULL", (session_id, key))
                 is_fav = False
             else:
-                conn.execute("INSERT OR IGNORE INTO user_favorites (user_id, session_id, recipe_key) VALUES (NULL, ?, ?)", (session_id, key))
+                conn.execute("INSERT OR IGNOREENT INTO user_favorites ...") # Keep core toggle logic clean
                 is_fav = True
         conn.commit()
         return response_with_session({"key": key, "favorited": is_fav})
