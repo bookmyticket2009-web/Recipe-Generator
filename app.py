@@ -206,6 +206,8 @@ def signup():
 
     except sqlite3.IntegrityError:
         return jsonify({"error": "An account with this email already exists"}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
 
     finally:
         conn.close()
@@ -255,6 +257,67 @@ def get_current_user():
     })
 
 
+# --- SAFE RECIPE SUBMISSION ENDPOINT (Prevents HTML Error Output) ---
+@app.route("/api/recipes/submit", methods=["POST"])
+def submit_recipe():
+    try:
+        user_id = session.get("user_id")
+        username = session.get("username")
+        if not user_id or not username:
+            return jsonify({"error": "Unauthorized: Please log in to submit recipes."}), 401
+
+        data = request.get_json(silent=True) or {}
+        title = str(data.get("title", "")).strip()
+        tag = str(data.get("tag", "main course")).strip().lower()
+        time = str(data.get("time", "30m")).strip()
+        description = str(data.get("desc", data.get("description", ""))).strip()
+        instructions = data.get("instructions", [])
+
+        try:
+            kcal = int(data.get("kcal", 350))
+        except (TypeError, ValueError):
+            kcal = 350
+
+        if not title:
+            return jsonify({"error": "Recipe title is required."}), 400
+        if not description:
+            return jsonify({"error": "Recipe description is required."}), 400
+
+        instructions_json = json.dumps(instructions) if isinstance(instructions, list) else json.dumps([str(instructions)])
+
+        conn = get_db_connection()
+        try:
+            conn.execute("""
+                INSERT INTO recipe_submissions (title, tag, time, kcal, desc, instructions, submitted_by, ai_status, ai_reason, approval_status, rejection_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'New', 'User submission', 'Pending', '')
+            """, (title, tag, time, kcal, description, instructions_json, username))
+            conn.commit()
+        finally:
+            conn.close()
+
+        return jsonify({"success": True, "message": "Recipe submitted successfully for admin approval!"})
+
+    except Exception as exc:
+        # Ensures a clean JSON response instead of a standard Flask HTML traceback page
+        return jsonify({"error": f"Server error: {str(exc)}"}), 500
+@app.route("/api/recipes/my-submissions")
+def get_my_submissions():
+    user_id = session.get("user_id")
+    username = session.get("username")
+    
+    if not user_id or not username:
+        return jsonify({"error": "Unauthorized"}), 401
+        
+    conn = get_db_connection()
+    try:
+        rows = conn.execute(
+            "SELECT title, tag, time, kcal, approval_status, rejection_reason FROM recipe_submissions WHERE submitted_by = ? ORDER BY id DESC",
+            (username,)
+        ).fetchall()
+        return jsonify([dict(row) for row in rows])
+    finally:
+        conn.close()
+        
 @app.route("/api/fridge/match", methods=["POST"])
 def match_fridge_recipes():
     data = request.get_json(silent=True) or {}
@@ -458,7 +521,7 @@ def toggle_favorite(key):
                 conn.execute("DELETE FROM user_favorites WHERE session_id = ? AND recipe_key = ? AND user_id IS NULL", (session_id, key))
                 is_fav = False
             else:
-                conn.execute("INSERT OR IGNOREENT INTO user_favorites ...") # Keep core toggle logic clean
+                conn.execute("INSERT OR IGNORE INTO user_favorites (session_id, recipe_key) VALUES (?, ?)", (session_id, key))
                 is_fav = True
         conn.commit()
         return response_with_session({"key": key, "favorited": is_fav})

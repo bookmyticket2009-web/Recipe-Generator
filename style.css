@@ -44,7 +44,6 @@ html, body {
   background: var(--surface-cream);
   overflow: hidden;
   position: relative;
-  flex-direction: row !important;
 }
 
 .sidebar-overlay {
@@ -65,7 +64,6 @@ html, body {
   overflow: hidden;
   position: relative !important;
   transform: none !important;
-  order: 1 !important;
 }
 
 .logo {
@@ -157,7 +155,6 @@ nav a.active::after {
 
 /* --- LAPTOP ORIENTED MAIN WORKSPACE --- */
 .main {
-  order: 2 !important;
   flex: 1 !important;
   height: 100vh !important;
   padding: 32px 36px !important;
@@ -605,14 +602,23 @@ nav a.active::after {
   box-shadow: none;
 }
 
-/* --- FULL WIDTH CHATBOX & TABLE WIDESCREEN FIX --- */
+/* --- AI CHEF VISIBILITY FIX ---
+   JavaScript controls whether AI Chef is shown.
+   Do NOT force display:flex here. */
 #aiChefSection {
   width: 100% !important;
   max-width: 100% !important;
   height: calc(100vh - 100px) !important;
-  display: flex !important;
   flex-direction: column !important;
   margin-top: 0 !important;
+}
+
+#aiChefSection[style*="display: none"] {
+  display: none !important;
+}
+
+#aiChefSection[style*="display: block"] {
+  display: flex !important;
 }
 
 #aiChefSection .fridge-card {
@@ -855,7 +861,6 @@ nav a.active::after {
 
 /* Detail Drawer Side Panel */
 .detail {
-  order: 3 !important;
   width: 380px; 
   height: 100vh;
   flex-shrink: 0; 
@@ -1031,3 +1036,132 @@ nav a.active::after {
 }
 
 .form-error { color: #ef4444; font-size: 12px; font-weight: 600; }
+
+/* =========================================================
+   COOKEASE FINAL DESKTOP LAYOUT
+   LEFT SIDEBAR | CENTER RECIPES | RIGHT RECIPE DETAILS
+   ========================================================= */
+
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+
+/* --- PERMANENT LAPTOP 3-COLUMN LAYOUT FIX (DRAWER BELOW PAGE FIX) --- */
+
+html, body {
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.app {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: nowrap !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  overflow: hidden !important;
+}
+
+/* 1. Left Sidebar */
+.sidebar {
+  flex: 0 0 260px !important;
+  width: 260px !important;
+  height: 100vh !important;
+  position: relative !important;
+  order: 1 !important;
+  overflow-y: auto !important;
+}
+
+/* 2. Center Main Workspace */
+.main {
+  flex: 1 1 auto !important;
+  height: 100vh !important;
+  order: 2 !important;
+  overflow-y: auto !important;
+  padding: 32px 36px !important;
+  min-width: 0 !important;
+}
+
+/* 3. Right Recipe Detail Drawer (Locked Beside Main, Fixed on Laptop) */
+.detail, #detailDrawer {
+  display: block !important;
+  flex: 0 0 380px !important;
+  width: 380px !important;
+  min-width: 380px !important;
+  max-width: 380px !important;
+  height: 100vh !important;
+  order: 3 !important;
+  position: fixed !important; /* Laptop par bhi fixed kar diya gaya hai taaki yeh neeche na jaye */
+  top: 0 !important;
+  right: 0 !important; /* Screen ke right edge par lock */
+  bottom: auto !important;
+  left: auto !important;
+  transform: none !important;
+  margin: 0 !important;
+  border-left: 1px solid var(--border-light) !important;
+  background: var(--surface-card) !important;
+  overflow-y: auto !important;
+  z-index: 50 !important;
+}
+
+/* Center main workspace ko right margin diya taaki content drawer ke peeche na chupe */
+.app > .main {
+  flex: 1 1 auto !important;
+  flex-shrink: 1 !important;
+  margin-right: 380px !important; /* Drawer ki width ke barabar space */
+  overflow-y: auto !important;
+}
+
+/* Ensure no elements stretch or push the drawer down */
+.app > .sidebar,
+.app > .detail {
+  flex-shrink: 0 !important;
+}
+
+@media (max-width: 992px) {
+  /* Mobile view mein main workspace ka right margin hata dein taaki wo full width le sake */
+  .app > .main {
+    margin-right: 0 !important;
+  }
+
+  .app > .detail {
+    position: fixed !important;
+    top: 0 !important;
+    right: -380px !important; /* Screen ke bahar hidden rahega jab tak .show class na lage */
+    left: auto !important;
+    width: 380px !important;
+    min-width: 380px !important;
+    max-width: 380px !important;
+    z-index: 1000 !important;
+    transition: right 0.3s ease !important;
+  }
+
+  .app > .detail.show {
+    right: 0 !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .app > .sidebar {
+    flex-basis: 240px !important;
+    width: 240px !important;
+    min-width: 240px !important;
+    max-width: 240px !important;
+  }
+
+  .app > .detail {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: 100% !important;
+    right: -100% !important;
+  }
+
+  .app > .detail.show {
+    right: 0 !important;
+  }
+}

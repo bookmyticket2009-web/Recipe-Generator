@@ -169,6 +169,8 @@ def signup():
         return response_with_session({"message": "Success", "user": {"id": user_id, "username": username}})
     except sqlite3.IntegrityError:
         return jsonify({"error": "Email already exists"}), 400
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
     finally:
         conn.close()
 
@@ -180,8 +182,10 @@ def login():
     password = str(data.get("password", ""))
 
     conn = get_db_connection()
-    user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
-    conn.close()
+    try:
+        user = conn.execute("SELECT * FROM users WHERE email = ?", (email,)).fetchone()
+    finally:
+        conn.close()
 
     if not user or not check_password_hash(user["password_hash"], password):
         return jsonify({"error": "Invalid email or password"}), 401
@@ -231,94 +235,63 @@ def admin_logout():
     return jsonify({"message": "Logged out of admin panel"})
 
 
+# --- CORRECTED SUBMISSION ROUTE ---
 @app.route("/api/recipes/submit", methods=["POST"])
 def submit_recipe():
-    user_id = session.get("user_id")
-    username = session.get("username")
-    is_admin = session.get("is_admin", False)
+    try:
+        user_id = session.get("user_id")
+        username = session.get("username")
+        is_admin = session.get("is_admin", False)
 
-    if not user_id or not username:
-        return jsonify({"error": "You must be logged in to submit recipes."}), 401
+        if not user_id or not username:
+            return jsonify({"error": "You must be logged in to submit recipes."}), 401
 
-    data = request.get_json(silent=True) or {}
-    title = str(data.get("title", "")).strip()
-    tag = str(data.get("tag", "main course")).strip().lower()
-    time = str(data.get("time", "30m")).strip()
-    desc = str(data.get("desc", "")).strip()
-    instructions = data.get("instructions", "")
-    kcal = data.get("kcal", 350)
-
-    if not title or not desc:
-        return jsonify({"error": "Title and description required"}), 400
-
-    conn = get_db_connection()
-
-    if is_admin:
-        recipe_key = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
-        icon = "🍞" if tag == "bakery" else ("🥤" if tag == "beverages" else "🥘")
-        instructions_list = instructions if isinstance(instructions, list) else [str(instructions)]
-        nutrition_dict = {"calories": f"{kcal} kcal", "carbs": "20g", "protein": "8g", "fat": "15g"}
-
+        data = request.get_json(silent=True) or {}
+        title = str(data.get("title", "")).strip()
+        tag = str(data.get("tag", "main course")).strip().lower()
+        time = str(data.get("time", "30m")).strip()
+        desc = str(data.get("desc", data.get("description", ""))).strip()
+        instructions = data.get("instructions", [])
+        
         try:
+            kcal = int(data.get("kcal", 350))
+        except (TypeError, ValueError):
+            kcal = 350
+
+        if not title or not desc:
+            return jsonify({"error": "Title and description are required."}), 400
+
+        conn = get_db_connection()
+        try:
+            if is_admin:
+                recipe_key = re.sub(r"[^a-z0-9]+", "_", title.lower()).strip("_")
+                icon = "🍞" if tag == "bakery" else ("🥤" if tag == "beverages" else "🥘")
+                instructions_list = instructions if isinstance(instructions, list) else [str(instructions)]
+                nutrition_dict = {"calories": f"{kcal} kcal", "carbs": "20g", "protein": "8g", "fat": "15g"}
+
+                conn.execute("""
+                    INSERT OR IGNORE INTO recipes (key, title, tag, time, kcal, desc, image_url, icon, instructions, nutrition)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (recipe_key, title, tag, time, kcal, desc,
+                      "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
+                      icon, json.dumps(instructions_list), json.dumps(nutrition_dict)))
+                conn.commit()
+                return jsonify({"message": "Admin direct publish: Recipe added successfully!"})
+
+            # Regular user submission matching app.py schema
+            instructions_json = json.dumps(instructions) if isinstance(instructions, list) else json.dumps([str(instructions)])
             conn.execute("""
-                INSERT OR IGNORE INTO recipes (key, title, tag, time, kcal, desc, image_url, icon, instructions, nutrition)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-            """, (recipe_key, title, tag, time, kcal, desc,
-                  "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
-                  icon, json.dumps(instructions_list), json.dumps(nutrition_dict)))
+                INSERT INTO recipe_submissions (title, tag, time, kcal, desc, instructions, submitted_by, ai_status, ai_reason, approval_status, rejection_reason)
+                VALUES (?, ?, ?, ?, ?, ?, ?, 'New', 'User submission', 'Pending', '')
+            """, (title, tag, time, kcal, desc, instructions_json, username))
             conn.commit()
 
-            recipes_list = []
-            if os.path.exists(JSON_FILE):
-                with open(JSON_FILE, "r", encoding="utf-8") as jf:
-                    try: recipes_list = json.load(jf)
-                    except: recipes_list = []
-
-            new_recipe = {
-                "key": recipe_key, "title": title, "tag": tag,
-                "time": time, "kcal": kcal, "desc": desc,
-                "image_url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
-                "icon": icon, "instructions": instructions_list, "nutrition": nutrition_dict
-            }
-            if not any(r.get("key") == recipe_key for r in recipes_list):
-                recipes_list.append(new_recipe)
-                with open(JSON_FILE, "w", encoding="utf-8") as jf:
-                    json.dump(recipes_list, jf, indent=2)
-
+            return jsonify({"message": "Recipe submitted successfully for admin approval!"})
+        finally:
             conn.close()
-            return jsonify({"message": "Admin direct publish: Recipe added and published immediately!"})
-        except Exception as exc:
-            conn.close()
-            return jsonify({"error": str(exc)}), 500
 
-    existing = conn.execute("SELECT title FROM recipes").fetchall()
-    existing_titles = [row["title"] for row in existing]
-    ai_status, ai_reason = "New", "Unique recipe structure."
-
-    if chat_client:
-        try:
-            prompt = f"Analyze Title: {title}. Existing: {', '.join(existing_titles)}. Return JSON with keys 'status' ('New' or 'Copied') and 'reason'."
-            response = chat_client.chat(model=OLLAMA_CHAT_MODEL, messages=[{"role": "user", "content": prompt}])
-            reply = response["message"]["content"].strip()
-            start, end = reply.find("{"), reply.rfind("}")
-            if start >= 0 and end > start:
-                ai_data = json.loads(reply[start:end + 1])
-                if ai_data.get("status") in {"New", "Copied"}:
-                    ai_status = ai_data["status"]
-                ai_reason = str(ai_data.get("reason", "Analyzed by AI."))
-        except Exception as exc:
-            print(f"Ollama error: {exc}")
-
-    instructions_json = json.dumps(instructions) if isinstance(instructions, list) else json.dumps([str(instructions)])
-
-    conn.execute("""
-        INSERT INTO recipe_submissions (title, tag, time, kcal, desc, instructions, submitted_by, ai_status, ai_reason, approval_status, rejection_reason)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, 'Pending', '')
-    """, (title, tag, time, kcal, desc, instructions_json, username, ai_status, ai_reason))
-    conn.commit()
-    conn.close()
-
-    return jsonify({"message": "Recipe submitted successfully for admin approval!", "ai_analysis": {"status": ai_status, "reason": ai_reason}})
+    except Exception as exc:
+        return jsonify({"error": f"Server submission error: {str(exc)}"}), 500
 
 
 @app.route("/api/recipes/my-submissions")
@@ -339,15 +312,20 @@ def get_my_submissions():
     finally:
         conn.close()
 
-
 @app.route("/api/admin/submissions")
 def get_admin_submissions():
     if not session.get("is_admin"):
         return jsonify({"error": "Unauthorized"}), 403
+    
     conn = get_db_connection()
-    rows = conn.execute("SELECT * FROM recipe_submissions ORDER BY id DESC").fetchall()
-    conn.close()
-    return jsonify([dict(row) for row in rows])
+    try:
+        # Yeh query recipe_submissions table se saari submissions nikal kar admin ko degi
+        rows = conn.execute("SELECT * FROM recipe_submissions ORDER BY id DESC").fetchall()
+        return jsonify([dict(row) for row in rows])
+    except Exception as exc:
+        return jsonify({"error": str(exc)}), 500
+    finally:
+        conn.close()
 
 
 @app.route("/api/admin/submissions/<int:sub_id>/approve", methods=["POST"])
@@ -356,17 +334,16 @@ def approve_submission(sub_id):
         return jsonify({"error": "Unauthorized"}), 403
 
     conn = get_db_connection()
-    sub = conn.execute("SELECT * FROM recipe_submissions WHERE id = ?", (sub_id,)).fetchone()
-    if not sub:
-        conn.close()
-        return jsonify({"error": "Not found"}), 404
-
-    recipe_key = re.sub(r"[^a-z0-9]+", "_", sub["title"].lower()).strip("_")
-    icon = "🍞" if sub["tag"] == "bakery" else ("🥤" if sub["tag"] == "beverages" else "🥘")
-    instructions = safe_json_loads(sub["instructions"], [])
-    nutrition_dict = {"calories": f"{sub['kcal']} kcal", "carbs": "20g", "protein": "8g", "fat": "15g"}
-
     try:
+        sub = conn.execute("SELECT * FROM recipe_submissions WHERE id = ?", (sub_id,)).fetchone()
+        if not sub:
+            return jsonify({"error": "Not found"}), 404
+
+        recipe_key = re.sub(r"[^a-z0-9]+", "_", sub["title"].lower()).strip("_")
+        icon = "🍞" if sub["tag"] == "bakery" else ("🥤" if sub["tag"] == "beverages" else "🥘")
+        instructions = safe_json_loads(sub["instructions"], [])
+        nutrition_dict = {"calories": f"{sub['kcal']} kcal", "carbs": "20g", "protein": "8g", "fat": "15g"}
+
         conn.execute("""
             INSERT OR IGNORE INTO recipes (key, title, tag, time, kcal, desc, image_url, icon, instructions, nutrition)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
@@ -377,29 +354,11 @@ def approve_submission(sub_id):
         conn.execute("UPDATE recipe_submissions SET approval_status = 'Approved' WHERE id = ?", (sub_id,))
         conn.commit()
 
-        recipes_list = []
-        if os.path.exists(JSON_FILE):
-            with open(JSON_FILE, "r", encoding="utf-8") as jf:
-                try: recipes_list = json.load(jf)
-                except: recipes_list = []
-
-        new_recipe = {
-            "key": recipe_key, "title": sub["title"], "tag": sub["tag"],
-            "time": sub["time"], "kcal": sub["kcal"], "desc": sub["desc"],
-            "image_url": "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=600&q=80",
-            "icon": icon, "instructions": instructions, "nutrition": nutrition_dict
-        }
-        if not any(r.get("key") == recipe_key for r in recipes_list):
-            recipes_list.append(new_recipe)
-            with open(JSON_FILE, "w", encoding="utf-8") as jf:
-                json.dump(recipes_list, jf, indent=2)
-
+        return jsonify({"message": "Approved and published successfully!"})
     except Exception as exc:
-        conn.close()
         return jsonify({"error": str(exc)}), 500
-
-    conn.close()
-    return jsonify({"message": "Approved and published successfully!"})
+    finally:
+        conn.close()
 
 
 @app.route("/api/admin/submissions/<int:sub_id>/reject", methods=["POST"])
@@ -410,10 +369,12 @@ def reject_submission(sub_id):
     reason = str(data.get("reason", "No reason provided.")).strip()
 
     conn = get_db_connection()
-    conn.execute("UPDATE recipe_submissions SET approval_status = 'Rejected', rejection_reason = ? WHERE id = ?", (reason, sub_id))
-    conn.commit()
-    conn.close()
-    return jsonify({"message": "Rejected with reason."})
+    try:
+        conn.execute("UPDATE recipe_submissions SET approval_status = 'Rejected', rejection_reason = ? WHERE id = ?", (reason, sub_id))
+        conn.commit()
+        return jsonify({"message": "Rejected with reason."})
+    finally:
+        conn.close()
 
 
 @app.route("/api/fridge/match", methods=["POST"])
@@ -489,8 +450,10 @@ def get_recipe_detail(key):
 @app.route("/api/recipes/todays-pick")
 def todays_pick():
     conn = get_db_connection()
-    recipe = conn.execute("SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1").fetchone()
-    conn.close()
+    try:
+        recipe = conn.execute("SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1").fetchone()
+    finally:
+        conn.close()
     if not recipe: return jsonify({"error": "None"}), 404
     return jsonify({"key": recipe["key"], "title": recipe["title"], "kcal": recipe["kcal"], "image": recipe["image"] or recipe["image_url"], "icon": recipe["icon"] or "🌱"})
 
@@ -498,8 +461,10 @@ def todays_pick():
 @app.route("/api/recipes/roulette")
 def roulette_pick():
     conn = get_db_connection()
-    recipe = conn.execute("SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1").fetchone()
-    conn.close()
+    try:
+        recipe = conn.execute("SELECT * FROM recipes ORDER BY RANDOM() LIMIT 1").fetchone()
+    finally:
+        conn.close()
     if not recipe: return jsonify({"error": "None"}), 404
     return jsonify({"key": recipe["key"], "title": recipe["title"], "kcal": recipe["kcal"], "image": recipe["image"] or recipe["image_url"], "icon": recipe["icon"] or "🌱", "desc": recipe["desc"], "favorited": recipe["key"] in get_favorites()})
 

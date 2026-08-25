@@ -19,6 +19,12 @@ document.addEventListener("DOMContentLoaded", () => {
     setupRecipeSubmission();
     setupAdminAuth();
     handleUrlRecipeHash();
+
+    // 🚀 Auto-load admin submissions on page load if the admin section is visible
+    const adminSection = document.getElementById("adminSection");
+    if (adminSection && adminSection.style.display !== "none") {
+        checkAdminSession();
+    }
 });
 
 let currentTag = "all";
@@ -101,6 +107,7 @@ function setupCategoryFilters() {
             } else if (dataNav === "admin") {
                 if (adminSection) adminSection.style.display = "block";
                 checkAdminSession();
+                loadAdminSubmissions(); 
             } else {
                 if (homeView) homeView.style.display = "block";
                 currentTag = tagMapping[dataNav] || dataNav;
@@ -189,20 +196,20 @@ async function loadAdminSubmissions() {
         if (!res.ok) throw new Error("Unauthorized");
         const items = await res.json();
 
-        if (items.length === 0) {
-            container.innerHTML = `<p style="color: var(--slate-600);">No recipe submissions found.</p>`;
+        if (!items || items.length === 0) {
+            container.innerHTML = `<p style="color: var(--slate-600); padding: 10px;">No recipe submissions found.</p>`;
             return;
         }
 
         container.innerHTML = items.map(sub => `
-            <div style="background: var(--surface-cream); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 10px;">
+            <div style="background: var(--surface-cream); border: 1px solid var(--border-light); border-radius: var(--radius-md); padding: 20px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <h3 style="font-size: 16px; font-weight: 800; color: var(--slate-900);">${sub.title} <span style="font-size: 11px; padding: 3px 8px; border-radius: 10px; background: ${sub.ai_status === 'New' ? '#dcfce7' : '#fee2e2'}; color: ${sub.ai_status === 'New' ? '#166534' : '#991b1b'}; margin-left: 8px;">AI: ${sub.ai_status}</span></h3>
+                    <h3 style="font-size: 16px; font-weight: 800; color: var(--slate-900);">${sub.title} <span style="font-size: 11px; padding: 3px 8px; border-radius: 10px; background: ${sub.ai_status === 'New' ? '#dcfce7' : '#fee2e2'}; color: ${sub.ai_status === 'New' ? '#166534' : '#991b1b'}; margin-left: 8px;">AI: ${sub.ai_status || 'New'}</span></h3>
                     <span style="font-size: 12px; font-weight: 700; color: ${sub.approval_status === 'Approved' ? '#16a34a' : (sub.approval_status === 'Rejected' ? '#dc2626' : '#d97706')};">Status: ${sub.approval_status}</span>
                 </div>
                 <p style="font-size: 13px; color: var(--slate-600);"><b>Category:</b> ${sub.tag} | <b>Time:</b> ${sub.time} | <b>Calories:</b> ${sub.kcal} kcal | <b>Submitted By:</b> <b>${sub.submitted_by}</b></p>
                 <p style="font-size: 13px; color: var(--slate-900);"><b>Description:</b> ${sub.desc}</p>
-                <p style="font-size: 12px; color: var(--slate-600);"><b>AI Reasoning:</b> ${sub.ai_reason}</p>
+                <p style="font-size: 12px; color: var(--slate-600);"><b>AI Reasoning:</b> ${sub.ai_reason || 'N/A'}</p>
                 ${sub.approval_status === 'Rejected' ? `<p style="font-size: 12px; color: #dc2626;"><b>Rejection Reason:</b> ${sub.rejection_reason}</p>` : ''}
                 ${sub.approval_status === 'Pending' ? `
                     <div style="display: flex; gap: 10px; margin-top: 8px; align-items: center; flex-wrap: wrap;">
@@ -216,6 +223,7 @@ async function loadAdminSubmissions() {
             </div>
         `).join("");
     } catch (err) {
+        console.error("Admin load error:", err);
         container.innerHTML = `<p style="color: #dc2626;">Failed to load submissions or unauthorized access.</p>`;
     }
 }
@@ -315,30 +323,32 @@ async function loadMySubmissionsTracker() {
         }
         const items = await res.json();
 
-        if (items.length === 0) {
+        if (!items || items.length === 0) {
             trackerContainer.innerHTML = `<p style="color: var(--slate-600); font-size: 13px;">You haven't submitted any recipes yet.</p>`;
             return;
         }
 
         trackerContainer.innerHTML = items.map(sub => {
-            let statusColor = '#d97706';
-            if (sub.approval_status === 'Approved') statusColor = '#16a34a';
-            if (sub.approval_status === 'Rejected') statusColor = '#dc2626';
+            let statusColor = '#d97706'; 
+            if (sub.approval_status === 'Approved') statusColor = '#16a34a'; 
+            if (sub.approval_status === 'Rejected') statusColor = '#dc2626'; 
 
             return `
-                <div style="background: var(--surface-alt); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 12px 16px; display: flex; flex-direction: column; gap: 6px;">
+                <div style="background: var(--surface-alt); border: 1px solid var(--border-light); border-radius: var(--radius-sm); padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; margin-bottom: 10px;">
                     <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <b style="font-size: 14px; color: var(--slate-900);">${sub.title}</b>
-                        <span style="font-size: 12px; font-weight: 700; color: ${statusColor};">Status: ${sub.approval_status}</span>
+                        <b style="font-size: 14.5px; color: var(--slate-900);">${sub.title}</b>
+                        <span style="font-size: 12px; font-weight: 700; padding: 3px 10px; border-radius: 12px; background: #fff; border: 1px solid ${statusColor}; color: ${statusColor};">Status: ${sub.approval_status}</span>
                     </div>
-                    <p style="font-size: 12.5px; color: var(--slate-600);">Category: ${sub.tag} | Time: ${sub.time} | Calories: ${sub.kcal} kcal</p>
-                    ${sub.approval_status === 'Rejected' ? `<p style="font-size: 12px; color: #dc2626; background: #fee2e2; padding: 6px 10px; border-radius: 4px;"><b>Rejection Reason from Admin:</b> ${sub.rejection_reason}</p>` : ''}
-                    ${sub.approval_status === 'Approved' ? `<p style="font-size: 12px; color: #166534; background: #dcfce7; padding: 6px 10px; border-radius: 4px;">🎉 Congratulations! Your recipe has been published to the live CookEase database.</p>` : ''}
+                    <p style="font-size: 12.5px; color: var(--slate-600);">Category: <b>${sub.tag}</b> | Time: <b>${sub.time}</b> | Calories: <b>${sub.kcal} kcal</b></p>
+                    ${sub.approval_status === 'Rejected' ? `<p style="font-size: 12px; color: #dc2626; background: #fee2e2; padding: 8px 12px; border-radius: 6px;"><b>Rejection Reason from Admin:</b> ${sub.rejection_reason || 'No reason provided.'}</p>` : ''}
+                    ${sub.approval_status === 'Approved' ? `<p style="font-size: 12px; color: #166534; background: #dcfce7; padding: 8px 12px; border-radius: 6px;">🎉 Congratulations! Your recipe has been published to the live CookEase database.</p>` : ''}
+                    ${sub.approval_status === 'Pending' ? `<p style="font-size: 12px; color: #d97706; background: #fef3c7; padding: 8px 12px; border-radius: 6px;">⏳ Your recipe is currently under review by our culinary admins.</p>` : ''}
                 </div>
             `;
         }).join("");
     } catch (err) {
         console.error("Failed to load user submissions tracker", err);
+        trackerContainer.innerHTML = `<p style="color: #dc2626; font-size: 13px;">Could not load submission history.</p>`;
     }
 }
 
@@ -1067,7 +1077,6 @@ async function loadRecipeDetails(key) {
 
         const photoBox = document.querySelector(".detail-photo");
         
-        // --- 100% BULLETPROOF IMAGE FALLBACK FIX ---
         let imageUrl = recipe.image || recipe.image_url;
         if (!imageUrl || imageUrl.trim() === "") {
             imageUrl = "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80";
