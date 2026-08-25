@@ -638,8 +638,7 @@ nav a.active::after {
   box-shadow: none;
 }
 
-/* --- FULL SCREEN CHATBOX WITH MAXIMUM WIDTH (SIDEBARS REMOVED) --- */
-/* --- FULL WIDTH CHATBOX FIX (SOLVES HALF WIDTH ISSUE) --- */
+/* --- FULL WIDTH CHATBOX & TABLE FIX --- */
 #aiChefSection {
   width: 100% !important;
   max-width: 100% !important;
@@ -747,19 +746,17 @@ nav a.active::after {
   color: var(--slate-900);
 }
 
-/* Full Width Responsive Table Layout Inside Chat */
+/* Full Width Responsive Table Layout Inside Chat (Fixed Right-Side Gap Issue) */
 .chat-msg table {
   width: 100% !important;
   max-width: 100% !important;
-  display: block !important;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch !important;
-  table-layout: auto;
-  border-collapse: collapse;
-  margin: 16px 0;
-  font-size: 13.5px;
+  display: table !important;
+  table-layout: auto !important;
+  border-collapse: collapse !important;
+  margin: 16px 0 !important;
+  font-size: 13.5px !important;
   background: #ffffff !important;
-  border-radius: 8px;
+  border-radius: 8px !important;
   border: 1px solid #cbd5e1 !important;
 }
 
@@ -767,20 +764,22 @@ nav a.active::after {
   background: #0f172a !important;
   color: #ffffff !important;
   padding: 12px 16px !important;
-  font-weight: 700;
-  text-align: left;
-  white-space: nowrap;
+  font-weight: 700 !important;
+  text-align: left !important;
+  white-space: nowrap !important;
 }
 
 .chat-msg td {
   padding: 12px 16px !important;
   border-bottom: 1px solid #e2e8f0 !important;
   color: #0f172a !important;
-  vertical-align: top;
-  background: #ffffff;
+  vertical-align: top !important;
+  background: #ffffff !important;
 }
 
-.chat-msg tr:nth-child(even) td { background: #f8fafc !important; }
+.chat-msg tr:nth-child(even) td { 
+  background: #f8fafc !important; 
+}
 
 /* Recipe Roulette Modal */
 .roulette-card {
@@ -1065,75 +1064,44 @@ nav a.active::after {
 
 .form-error { color: #ef4444; font-size: 12px; font-weight: 600; }
 
-/* Responsive Breakpoints & Mobile Full-Width Chat/Sidebar Fixes */
+/* --- COMPACT MOBILE SIDEBAR FIX --- */
 @media (max-width: 992px) {
   .sidebar {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     height: 100vh !important;
-    width: 280px !important;
+    width: 220px !important; /* Sidebar ki width mobile par choti kar di gayi hai */
+    max-width: 75vw !important;
     transform: translateX(-100%) !important;
-    box-shadow: var(--shadow-modal);
     transition: transform 0.3s ease-in-out !important;
     z-index: 1000 !important;
-  }
-  .sidebar.show { 
-    transform: translateX(0) !important; 
-  }
-  .close-sidebar-btn, .menu-toggle { 
-    display: flex !important; 
-    align-items: center;
-    justify-content: center;
-  }
-  .main { 
-    padding: 24px 20px; 
-    width: 100vw !important;
-  }
-  .fridge-flex-wrapper { 
-    flex-direction: column !important; 
-  }
-  .fridge-input-area { 
-    flex: 1 !important; 
+    padding: 20px 14px !important;
   }
 
-  /* AI Chef / Chat Section Full Width on Mobile */
-  #aiChefSection {
-    width: 100% !important;
-    height: calc(100vh - 90px) !important;
-    margin-top: 0 !important;
+  .sidebar.show {
+    transform: translateX(0) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
   }
-  #aiChefSection .fridge-card {
-    height: 100% !important;
-    display: flex !important;
-    flex-direction: column !important;
-    padding: 16px !important;
+
+  /* Sidebar ke andar text aur links ko compact rakhne ke liye */
+  .sidebar .logo {
+    font-size: 20px !important;
+    margin-bottom: 20px !important;
   }
-  #aiChefSection .fridge-flex-wrapper {
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
+
+  nav a {
+    padding: 8px 10px !important;
+    font-size: 13px !important;
+    gap: 10px !important;
   }
-  #aiChefSection .fridge-input-area {
-    display: none !important;
+
+  .promo {
+    padding: 12px !important;
   }
-  #aiChefSection .fridge-tray-area {
-    width: 100% !important;
-    flex: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-  }
-  #aiChefSection .fridge-tray-area > div[style*="height"] {
-    height: 100% !important;
-    flex: 1 !important;
-  }
-  .ai-chef-messages {
-    padding: 16px !important;
-  }
-  .chat-msg table {
-    display: block !important;
-    overflow-x: auto !important;
-    white-space: nowrap !important;
+
+  .promo p {
+    font-size: 11px !important;
   }
 }
 
