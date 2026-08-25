@@ -1,27 +1,21 @@
 @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400&family=Playfair+Display:ital,wght@0,600;0,700;1,400&display=swap');
 
 :root {
-  /* Tokens */
-  --slate-900: #0f172a;     /* Executive Dark */
-  --slate-800: #1e293b;     /* Deep Accent Header */
-  --slate-600: #475569;     /* Body Secondary */
-  --slate-400: #94a3b8;     /* Subtle Accents */
-  
-  --amber-600: #f95700;     /* Primary Accent Orange */
-  --amber-700: #e04d00;     /* Hover Accent Deep */
-  --amber-50:  #fffbeb;     /* Surface Light Accent Tint */
-  
-  --surface-cream: #f8fafc; /* Background Tint */
-  --surface-card:  #ffffff; /* Card Background */
-  --surface-alt:   #f1f5f9; /* Surface Neutral Secondary */
-  
+  --slate-900: #0f172a;
+  --slate-800: #1e293b;
+  --slate-600: #475569;
+  --slate-400: #94a3b8;
+  --amber-600: #f95700;
+  --amber-700: #e04d00;
+  --amber-50:  #fffbeb;
+  --surface-cream: #f8fafc;
+  --surface-card:  #ffffff;
+  --surface-alt:   #f1f5f9;
   --border-light:  #e2e8f0;
   --border-focus:  #cbd5e1;
-  
   --shadow-subtle: 0 1px 3px rgba(15, 23, 42, 0.05);
   --shadow-card:   0 4px 12px -2px rgba(15, 23, 42, 0.08);
   --shadow-modal:  0 20px 40px rgba(0, 0, 0, 0.15);
-  
   --radius-sm: 8px;
   --radius-md: 14px;
   --radius-lg: 20px;
@@ -33,7 +27,6 @@
   padding: 0;
 }
 
-/* Restrict window scrolling to lock layout */
 html, body {
   height: 100vh;
   width: 100vw;
@@ -44,7 +37,6 @@ html, body {
   -webkit-font-smoothing: antialiased;
 }
 
-/* Master App Container */
 .app {
   display: flex;
   width: 100vw;
@@ -73,7 +65,7 @@ html, body {
   pointer-events: auto;
 }
 
-/* Sidebar Navigation */
+/* Sidebar Navigation (Desktop Default) */
 .sidebar {
   width: 260px;
   height: 100vh;
@@ -746,7 +738,7 @@ nav a.active::after {
   color: var(--slate-900);
 }
 
-/* Full Width Responsive Table Layout Inside Chat (Fixed Right-Side Gap Issue) */
+/* Full Width Stretched Table Fix (Removes Right-Side Gap Completely) */
 .chat-msg table {
   width: 100% !important;
   max-width: 100% !important;
@@ -1064,27 +1056,32 @@ nav a.active::after {
 
 .form-error { color: #ef4444; font-size: 12px; font-weight: 600; }
 
-/* --- COMPACT MOBILE SIDEBAR FIX --- */
+/* --- RESPONSIVE BREAKPOINTS & COMPACT MOBILE SIDEBAR FIX --- */
 @media (max-width: 992px) {
   .sidebar {
     position: fixed !important;
     top: 0 !important;
     left: 0 !important;
     height: 100vh !important;
-    width: 220px !important; /* Sidebar ki width mobile par choti kar di gayi hai */
+    width: 220px !important; /* Compact mobile sidebar width */
     max-width: 75vw !important;
     transform: translateX(-100%) !important;
     transition: transform 0.3s ease-in-out !important;
     z-index: 1000 !important;
     padding: 20px 14px !important;
+    box-shadow: var(--shadow-modal);
   }
 
   .sidebar.show {
     transform: translateX(0) !important;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25) !important;
   }
 
-  /* Sidebar ke andar text aur links ko compact rakhne ke liye */
+  .close-sidebar-btn, .menu-toggle { 
+    display: flex !important; 
+    align-items: center;
+    justify-content: center;
+  }
+
   .sidebar .logo {
     font-size: 20px !important;
     margin-bottom: 20px !important;
@@ -1102,6 +1099,19 @@ nav a.active::after {
 
   .promo p {
     font-size: 11px !important;
+  }
+
+  .main { 
+    padding: 24px 20px; 
+    width: 100vw !important;
+  }
+
+  .fridge-flex-wrapper { 
+    flex-direction: column !important; 
+  }
+
+  .fridge-input-area { 
+    flex: 1 !important; 
   }
 }
 
