@@ -44,6 +44,7 @@ html, body {
   background: var(--surface-cream);
   overflow: hidden;
   position: relative;
+  flex-direction: row !important;
 }
 
 .sidebar-overlay {
@@ -64,6 +65,7 @@ html, body {
   overflow: hidden;
   position: relative !important;
   transform: none !important;
+  order: 1 !important;
 }
 
 .logo {
@@ -155,6 +157,7 @@ nav a.active::after {
 
 /* --- LAPTOP ORIENTED MAIN WORKSPACE --- */
 .main {
+  order: 2 !important;
   flex: 1 !important;
   height: 100vh !important;
   padding: 32px 36px !important;
@@ -852,6 +855,7 @@ nav a.active::after {
 
 /* Detail Drawer Side Panel */
 .detail {
+  order: 3 !important;
   width: 380px; 
   height: 100vh;
   flex-shrink: 0; 
