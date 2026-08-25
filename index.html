@@ -146,35 +146,6 @@
       </div>
     </div>
 
-    <!-- ADMIN DASHBOARD VIEW -->
-    <div id="adminSection" style="display: none; margin-top: 24px;">
-      <div class="fridge-card">
-        <h2>🛡️ Admin Dashboard — Recipe Approvals</h2>
-        
-        <div id="adminLoginBox" style="max-width: 400px; margin: 20px auto; padding: 24px; background: var(--surface-cream); border-radius: var(--radius-md); border: 1px solid var(--border-light);">
-          <h3 style="font-size: 16px; margin-bottom: 12px; color: var(--slate-900);">Admin Authorization Required</h3>
-          <p style="font-size: 13px; color: var(--slate-600); margin-bottom: 16px;">Enter your Admin ID and Password to access the dashboard.</p>
-          <form id="adminLoginForm" style="display: flex; flex-direction: column; gap: 12px;">
-            <input type="text" id="adminIdInput" required placeholder="Admin ID (e.g. Prasheel)" style="padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); outline: none;">
-            <input type="password" id="adminPasswordInput" required placeholder="Password" style="padding: 10px 14px; border-radius: var(--radius-sm); border: 1px solid var(--border-light); outline: none;">
-            <div id="adminLoginError" style="color: #dc2626; font-size: 12px; font-weight: 600;"></div>
-            <button type="submit" class="btn-primary">Unlock Admin Panel</button>
-          </form>
-        </div>
-
-        <div id="adminDashboardContent" style="display: none;">
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <p style="color: var(--slate-600); font-size: 13.5px;">Review user-submitted recipes. Ollama AI evaluates each submission to detect whether it is <b>New</b> or <b>Copied</b>.</p>
-            <button id="adminLogoutBtn" style="background: #fef2f2; color: #dc2626; border: 1px solid #fee2e2; padding: 6px 14px; border-radius: var(--radius-sm); font-weight: 600; cursor: pointer;">Admin Logout</button>
-          </div>
-          <div id="adminSubmissionsList" style="display: flex; flex-direction: column; gap: 16px;">
-            <p style="color: var(--slate-600);">Loading submissions...</p>
-          </div>
-        </div>
-
-      </div>
-    </div>
-
     <!-- AI BOT SECTION: COOKEASE -->
     <div id="aiChefSection" style="display: none; margin-top: 24px;">
       <div class="fridge-card">
@@ -209,7 +180,6 @@
   <!-- Recipe Detail Panel -->
   <aside class="detail" id="detailDrawer">
     <div class="detail-actions">
-      <!-- FIXED: Added id="backBtn" explicitly -->
       <button class="circle-btn" id="backBtn" aria-label="Back">←</button>
       <div style="display:flex;gap:10px;">
         <button class="circle-btn" id="shareBtn" aria-label="Share">↗</button>
@@ -236,28 +206,20 @@
 <div class="modal-overlay" id="rouletteModal">
   <div class="modal-card roulette-card">
     <button class="modal-close" id="closeRouletteModal">&times;</button>
-    
     <div class="roulette-header">
       <h2>🎰 Recipe Roulette</h2>
       <p>Can't decide? Let the wheel pick your meal!</p>
     </div>
-
     <div class="roulette-wheel-container">
       <div class="roulette-pointer">👇</div>
       <canvas id="rouletteCanvas" width="240" height="220"></canvas>
     </div>
-
     <div class="roulette-result" id="rouletteResult" style="display: none;">
       <div class="result-icon" id="rouletteResultIcon">🍲</div>
       <h3 id="rouletteResultTitle">Dal Palak Recipe</h3>
-      <button class="btn-view-recipe" id="viewRouletteRecipeBtn">
-        📖 View Recipe
-      </button>
+      <button class="btn-view-recipe" id="viewRouletteRecipeBtn">📖 View Recipe</button>
     </div>
-
-    <button class="btn-spin-again" id="spinWheelBtn">
-      🎲 Spin Again!
-    </button>
+    <button class="btn-spin-again" id="spinWheelBtn">🎲 Spin Again!</button>
   </div>
 </div>
 

@@ -31,7 +31,6 @@ except ImportError:
 
 load_dotenv()
 
-# Fixed variable name to 'app' so Gunicorn can detect it properly on Render (`gunicorn app2:app`)
 app = Flask(__name__, template_folder=".", static_folder=".", static_url_path="")
 app.secret_key = os.getenv("SECRET_KEY", "cookease_secure_random_secret_key_2026")
 
@@ -532,8 +531,6 @@ def toggle_favorite(key):
     finally:
         conn.close()
 
-
-# --- FIXED ACTIVE OLLAMA CHATBOT ROUTES ---
 
 @app.route("/api/ai-chef/chat", methods=["POST"])
 def ai_chef_chat():
